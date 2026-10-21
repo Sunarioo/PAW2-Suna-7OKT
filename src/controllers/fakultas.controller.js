@@ -5,8 +5,21 @@ import { apiResponse, apiResponseValidation } from '../utils/response.js'
 
 class FakultasController {
   static async index(req, res) {
-    const listFakultas = await FakultasModel.find()
-    return apiResponse({ res, status: 200, data: listFakultas })
+     const { search, sortBy = "createdAt", sort } = req.query; 
+  const filter = {};
+  if (search) {
+    filter.name = {
+      $regex: search,
+      $options: "i",
+    };
+  }
+  const sortOption = {
+    createdAt: sort === "desc" ? -1 : 1, 
+    [sortBy]: sort === "desc" ? -1 : 1, 
+  };
+  const listFakultas = await FakultasModel.find(filter)
+    .sort(sortOption);
+  return apiResponse({ res, status: 200, data: listFakultas });
   }
 
   static async show(req, res) {
