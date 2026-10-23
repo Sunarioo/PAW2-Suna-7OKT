@@ -5,8 +5,47 @@ import { apiResponse, apiResponseValidation } from "../utils/response.js"
 import ProdiModel from "../model/prodi.model.js"
 
 class ProdiController{
-    static async index(req,res){
-        const listProdi = await ProdiModel.find().populate("fakultas")
+        static async index(req,res){
+            const { 
+        search, 
+        sortBy = "createdAt", 
+        sort, 
+        page = 1, 
+        limit = 10 
+        } = req.query; 
+        
+        const currentPage = Math.max(1, parseInt(page, 10) || 1); 
+        const perPage = Math.max(1, parseInt(limit, 10) || 10); 
+        const skip = (currentPage - 1) * perPage;
+        
+        const allowedSortFields = ["kode", "nama_prodi", "createdAt", "updatedAt"]; 
+        const sortField = allowedSortFields.includes(sortBy) ? sortBy : "createdAt"; 
+
+        const filter = {};
+        const sortOption = { 
+        [sortField]: sort === "desc" ? -1 : 1, 
+        _id : 1,
+        }; 
+
+        if (search) { 
+        filter.name = { 
+        $regex: search, 
+        $options: "i", 
+        };}
+        const [listProdi, totalData] = await Promise.all([
+            ProdiModel.find(filter)
+            .select({
+                _id:1,
+                kode:1,
+                nama_prodi:1,
+                createdAt:1,
+                updateAt:1,
+            })
+            .sort(sortOption)
+            .skip(skip)
+            .limit(perPage)
+            .populate("fakultas")
+        ])
         return apiResponse({
             res,
             status: 200,
